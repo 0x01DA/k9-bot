@@ -73,19 +73,15 @@ class Command(object):
     async def process(self):  # noqa
         """Process the command."""
 
-        logger.debug(
-            f"bot_commands :: Command.process: {self.command} {self.room}"
-        )
+        logger.info(f"bot_commands :: Command.process: {self.command} {self.room.display_name}")
         # echo
         if re.match("^echo$|^echo .*", self.commandlower):
             await self._echo()
         # help
-        elif re.match(
-            "^help$|^ayuda$|^man$|^manual$|^hilfe$|"
-            "^help .*|^help.sh$",
-            self.commandlower,
-        ):
+        elif re.match("^help$|^man$|^hilfe$|^help.sh$", self.commandlower):
             await self._show_help()
+        elif re.match("^list$|^commands$|^ls$", self.commandlower):
+            await self._list_commands()
         else:
             for command, alias in self.aliases.items():
               if self.commandlower in alias:
@@ -106,31 +102,22 @@ class Command(object):
 
     async def _show_help(self):
         """Show the help text."""
-        if not self.args:
-            response = ("Ahoi, I'm K9!\nUse `commands` to view available commands.")
-            await send_text_to_room(self.client, self.room.room_id, response)
-            return
-
-        topic = self.args[0]
-        if topic == "rules":
-            response = "These are the rules: Act responsibly."
-        elif topic == "commands":
-            aliases = json.dumps(self.aliases)
-            response = (aliases)
-            await send_text_to_room(self.client, self.room.room_id, response)
-            return
-        else:
-            response = f"Unknown help topic `{topic}`!"
+        response = ("Ahoi, I'm K9!\nUse `commands` to view available commands.")
         await send_text_to_room(self.client, self.room.room_id, response)
+        return
+    
+    async def _list_commands(self):
+        """List Commands.."""
+        aliases = json.dumps(self.aliases, sort_keys=True, indent=4)
+        response = (aliases)
+        await send_text_to_room(self.client, self.room.room_id, response, code=True)
+        return
 
     async def _unknown_command(self):
         await send_text_to_room(
             self.client,
             self.room.room_id,
-            (
-                f"Unknown command `{self.command}`. "
-                "Try the `help` command for more information."
-            ),
+            (f"Unknown command `{self.command}`. Try `commands` command for a list."),
         )
 
     async def _os_cmd(
@@ -203,5 +190,3 @@ class Command(object):
             split=split,
         )
 
-
-# EOF
