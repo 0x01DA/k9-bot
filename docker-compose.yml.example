@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  k9-bot:
+    container_name: k9-bot
+    image: 'k9-bot:latest'
+    build: '.'
+    restart: always
+    volumes:
+      - ${PWD}/config.yaml:/bot/config.yaml
+      - ${PWD}/bot.db:/bot/bot.db
+      - ${PWD}/store/:/bot/store/
+      - ${PWD}/scripts/:/bot/scripts/
+    environment:
+      - "PATH=$PATH:/bot/scripts"
+
