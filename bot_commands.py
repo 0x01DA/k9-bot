@@ -1,25 +1,12 @@
 #!/usr/bin/env python3
 
-r"""bot_commands.py.
-
-See the implemented sample bot commands of `echo`, `date`, `dir`, `help`,
-and `whoami`? Have a close look at them and style your commands after these
-example commands.
-
-Don't change tabbing, spacing, or formating as the
-file is automatically linted and beautified.
-
-"""
-
-import getpass
 import logging
 import os
 import glob
 import json
-import re  # regular expression matching
+import re
 import subprocess
 import yaml
-from sys import platform
 import traceback
 from chat_functions import send_text_to_room
 
@@ -33,17 +20,6 @@ class Command(object):
 
     def __init__(self, client, store, config, command, room, event):
         """Set up bot commands.
-
-        Arguments:
-        ---------
-            client (nio.AsyncClient): The client to communicate with Matrix
-            store (Storage): Bot storage
-            config (Config): Bot configuration parameters
-            command (str): The command and arguments
-            room (nio.rooms.MatrixRoom): The room the command was sent in
-            event (nio.events.room_events.RoomMessageText): The event
-                describing the command
-
         """
         self.client = client
         self.store = store
@@ -54,7 +30,7 @@ class Command(object):
         # self.args: list : list of arguments
         self.args = re.findall(r'(?:[^\s,"]|"(?:\\.|[^"])*")+', self.command)[1:]
         self.aliases = self.getaliases()
-        self.commandlower = self.command.lower()
+        self.commandlower = self.command.lower().split()[0]
 
     def getaliases(self):
         with open("aliases.yaml", 'r') as aliasfile:
