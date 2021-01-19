@@ -120,7 +120,8 @@ class Command(object):
                 f'OS command "{argv_list[0]}" with ' f'args: "{argv_list[1:]}"'
             )
             envirnoment = os.environ.copy()
-            envirnoment["ROOM"] = self.room.display_name
+            envirnoment["K9_ROOM"] = self.room.display_name
+            envirnoment["K9_EVENT"] = self.event
             run = subprocess.Popen(
                 argv_list,  # list of argv
                 stdout=subprocess.PIPE,
