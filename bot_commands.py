@@ -96,8 +96,7 @@ class Command(object):
             (f"Unknown command `{self.command}`. Try `commands` command for a list."),
         )
 
-    async def _os_cmd(
-        self,
+    async def _os_cmd(self,
         cmd: str,
         args: list,
         markdown_convert=True,
@@ -107,18 +106,7 @@ class Command(object):
     ):
         """Pass generic command on to the operating system.
 
-        cmd (str): string of the command including any path,
-            make sure command is found
-            by operating system in its PATH for executables
-            e.g. "date" for OS date command.
-            cmd does not include any arguments.
-            Valid example of cmd: "date"
-            Invalid example for cmd: "echo 'Date'; date --utc"
-            Invalid example for cmd: "echo 'Date' && date --utc"
-            Invalid example for cmd: "TZ='America/Los_Angeles' date"
-            If you have commands that consist of more than 1 command,
-            put them into a shell or .bat script and call that script
-            with any necessary arguments.
+        cmd (str): string of the command including any path
         args (list): list of arguments
             Valid example: [ '--verbose', '--abc', '-d="hello world"']
         markdown_convert (bool): value for how to format response

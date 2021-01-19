@@ -16,7 +16,12 @@ docker-compose build
 Other hints:
 - Create an account for your bot in some client, e.g. in Element
 - Use this account (username, password) in `config.yaml` and let the bot create a `brand-new` device
-  - If device is not new e2ee will not work.
+- If device is not new e2ee will not work.
 - Verify the bot via emoji-verify
 - If desired reconfigure `config.yaml` to replace password with access token for added security
+
+## Develop
+
+To add a new script just place it in `script`.
+To enable the script for the Bot make it executeable `chmod +x`.
 
