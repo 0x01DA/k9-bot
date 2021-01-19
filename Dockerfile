@@ -21,7 +21,7 @@ RUN apt-get purge -y build-essential && \
     apt-get autoremove -y && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-COPY script /bot/script/
+COPY scripts /bot/scripts/
 COPY *.py /bot/
 
 CMD [ "python", "./main.py" ]

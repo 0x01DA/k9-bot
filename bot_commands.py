@@ -49,7 +49,7 @@ class Command(object):
     async def process(self):  # noqa
         """Process the command."""
 
-        logger.info(f"bot_commands :: Command.process: {self.command} {self.room.display_name}")
+        logger.info(f"bot_commands :: Command.process: {self.command} {self.room.display_name} via {self.event}")
         # echo
         if re.match("^echo$|^echo .*", self.commandlower):
             await self._echo()
