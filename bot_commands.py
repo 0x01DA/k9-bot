@@ -119,11 +119,14 @@ class Command(object):
             logger.debug(
                 f'OS command "{argv_list[0]}" with ' f'args: "{argv_list[1:]}"'
             )
+            envirnoment = os.environ.copy()
+            envirnoment["ROOM"] = self.room.display_name
             run = subprocess.Popen(
                 argv_list,  # list of argv
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
+                env=envirnoment,
             )
             output, std_err = run.communicate()
             output = output.strip()
