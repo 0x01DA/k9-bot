@@ -72,8 +72,7 @@ class Callbacks(object):
 
         # Process as message if in a public room without command prefix
         has_command_prefix = msg.startswith(self.command_prefix)
-        # room.is_group is often a DM, but not always.
-        # room.is_group does not allow room aliases
+
         # room.member_count > 2 ... we assume a public room
         # room.member_count <= 2 ... we assume a DM
         if not has_command_prefix and room.member_count > 2:
@@ -116,19 +115,12 @@ class Callbacks(object):
         # Successfully joined room
         logger.info(f"Joined {room.room_id}")
 
-    async def to_device_cb(self, event):  # noqa
-        """Handle events sent to device.
 
-        Specifically this will perform Emoji verification.
-        It will accept an incoming Emoji verification requests
-        and follow the verification protocol.
+    async def accept_all_verify(self, event):  # noqa
+        """This will accept all Emoji verification requests.
         """
         try:
             client = self.client
-            logger.debug(
-                f"Device Event of type {type(event)} received in "
-                "to_device_cb().")
-
             if isinstance(event, KeyVerificationStart):  # first step
                 """ first step: receive KeyVerificationStart
                 KeyVerificationStart(
@@ -201,7 +193,6 @@ class Callbacks(object):
                 # We only need to inform the user.
                 estr = (f"Verification has been cancelled by {event.sender} "
                         f"for reason \"{event.reason}\".")
-                print(estr)
                 logger.info(estr)
 
             elif isinstance(event, KeyVerificationKey):  # second step
@@ -222,45 +213,12 @@ class Callbacks(object):
                 print(f"{sas.get_emoji()}")
                 # don't log the emojis
 
-                # The bot process must run in forground with a screen and
-                # keyboard so that user can accept/reject via keyboard.
-                # For emoji verification bot must not run as service or
-                # in background.
-                yn = input("Do the emojis match? (Y/N) (C for Cancel) ")
-                if yn.lower() == "y":
-                    estr = ("Match! The verification for this "
-                            "device will be accepted.")
-                    print(estr)
+                resp = await client.confirm_short_auth_string(
+                    event.transaction_id)
+                if isinstance(resp, ToDeviceError):
+                    estr = ("confirm_short_auth_string() "
+                            f"failed with {resp}")
                     logger.info(estr)
-                    resp = await client.confirm_short_auth_string(
-                        event.transaction_id)
-                    if isinstance(resp, ToDeviceError):
-                        estr = ("confirm_short_auth_string() "
-                                f"failed with {resp}")
-                        print(estr)
-                        logger.info(estr)
-                elif yn.lower() == "n":  # no, don't match, reject
-                    estr = ("No match! Device will NOT be verified "
-                            "by rejecting verification.")
-                    print(estr)
-                    logger.info(estr)
-                    resp = await client.cancel_key_verification(
-                        event.transaction_id, reject=True)
-                    if isinstance(resp, ToDeviceError):
-                        estr = (f"cancel_key_verification failed with {resp}")
-                        print(estr)
-                        logger.info(estr)
-                else:  # C or anything for cancel
-                    estr = ("Cancelled by user! Verification will be "
-                            "cancelled.")
-                    print(estr)
-                    logger.info(estr)
-                    resp = await client.cancel_key_verification(
-                        event.transaction_id, reject=False)
-                    if isinstance(resp, ToDeviceError):
-                        estr = (f"cancel_key_verification failed with {resp}")
-                        print(estr)
-                        logger.info(estr)
 
             elif isinstance(event, KeyVerificationMac):  # third step
                 """ Third step is to receive KeyVerificationMac
@@ -286,36 +244,26 @@ class Callbacks(object):
                     estr = (f"Cancelled or protocol error: Reason: {e}.\n"
                             f"Verification with {event.sender} not concluded. "
                             "Try again?")
-                    print(estr)
                     logger.info(estr)
                 else:
                     resp = await client.to_device(todevice_msg)
                     if isinstance(resp, ToDeviceError):
                         estr = f"to_device failed with {resp}"
-                        print(estr)
                         logger.info(estr)
                     estr = (f"sas.we_started_it = {sas.we_started_it}\n"
                             f"sas.sas_accepted = {sas.sas_accepted}\n"
                             f"sas.canceled = {sas.canceled}\n"
                             f"sas.timed_out = {sas.timed_out}\n"
                             f"sas.verified = {sas.verified}\n"
-                            f"sas.verified_devices = {sas.verified_devices}\n")
-                    print(estr)
-                    logger.info(estr)
-                    estr = ("Emoji verification was successful!\n"
-                            "Initiate another Emoji verification from "
-                            "another device or room if desired. "
-                            "Or if done verifying, hit Control-C to stop the "
-                            "bot in order to restart it as a service or to "
-                            "run it in the background.")
-                    print(estr)
+                            f"sas.verified_devices = {sas.verified_devices}\n\n"
+                            "Emoji verification was successful!")
                     logger.info(estr)
             else:
                 estr = (f"Received unexpected event type {type(event)}. "
                         f"Event is {event}. Event will be ignored.")
-                print(estr)
                 logger.info(estr)
         except BaseException:
             estr = traceback.format_exc()
             print(estr)
             logger.info(estr)
+

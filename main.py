@@ -75,7 +75,7 @@ async def main():  # noqa
     client.add_event_callback(callbacks.message, (RoomMessageText,))
     client.add_event_callback(callbacks.invite, (InviteMemberEvent,))
     client.add_to_device_callback(
-        callbacks.to_device_cb, (KeyVerificationEvent,))
+        callbacks.accept_all_verify, (KeyVerificationEvent,))
 
     # Keep trying to reconnect on failure (with some time in-between)
     while True:
@@ -112,7 +112,6 @@ async def main():  # noqa
                 logger.fatal(
                     "Failed to login. "
                     "Have you installed the correct dependencies? "
-                    "https://github.com/poljar/matrix-nio#installation "
                     "Error: %s", e
                 )
                 return False
@@ -134,19 +133,14 @@ async def main():  # noqa
                 else:
                     logger.debug(f"update_device successful with {resp}")
 
-            if config.trust_own_devices:
-                await client.sync(timeout=30000, full_state=True)
-                # Trust your own devices automatically.
-                # Log it so it can be manually checked
-                for device_id, olm_device in client.device_store[
-                        config.user_id].items():
-                    logger.debug("My other devices are: "
-                                 f"device_id={device_id}, "
-                                 f"olm_device={olm_device}.")
-                    logger.info("Setting up trust for my own "
-                                f"device {device_id} and session key "
-                                f"{olm_device.keys['ed25519']}.")
-                    client.verify_device(olm_device)
+            await client.sync(timeout=30000, full_state=True)
+            for device_id, olm_device in client.device_store[config.user_id].items():
+                logger.info("Setting up trust for my own "
+                            f"device {device_id} and session key "
+                            f"{olm_device.keys}.")
+                client.verify_device(olm_device)
+
+            
 
             await client.sync_forever(timeout=30000, full_state=True)
 

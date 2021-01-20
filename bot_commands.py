@@ -29,21 +29,10 @@ class Command(object):
         self.event = event
         # self.args: list : list of arguments
         self.args = re.findall(r'(?:[^\s,"]|"(?:\\.|[^"])*")+', self.command)[1:]
-        self.aliases = self.getaliases()
+        self.aliases = self.config.aliases
+        self.scripts_dir = self.config.scripts_path_abs
         self.commandlower = self.command.lower().split()[0]
 
-    def getaliases(self):
-        with open("aliases.yaml", 'r') as aliasfile:
-            aliases = yaml.safe_load(aliasfile)
-        for path in glob.glob("scripts/*"):
-            if os.access(path, os.X_OK):
-                script = os.path.split(path)[1]
-                script_name, _ = os.path.splitext(script)
-                if script in aliases:
-                    aliases[script].append(script_name)
-                else:
-                    aliases[script] = [ script_name ]
-        return aliases
 
     
     async def process(self):  # noqa
@@ -120,8 +109,9 @@ class Command(object):
                 f'OS command "{argv_list[0]}" with ' f'args: "{argv_list[1:]}"'
             )
             envirnoment = os.environ.copy()
+            envirnoment["PATH"] = "{}:{}".format(self.scripts_dir, envirnoment["PATH"])
             envirnoment["K9_ROOM"] = self.room.display_name
-            envirnoment["K9_EVENT"] = self.event
+            logger.debug(f'PATH: {envirnoment["PATH"]}')
             run = subprocess.Popen(
                 argv_list,  # list of argv
                 stdout=subprocess.PIPE,

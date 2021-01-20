@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 
-r"""message_responses.py.
-
-Don't change tabbing, spacing, or formating as the
-file is automatically linted and beautified.
-
+r"""
+message_responses.py.
 """
 
 
@@ -23,15 +20,10 @@ class Message(object):
         Arguments:
         ---------
             client (nio.AsyncClient): nio client used to interact with matrix
-
             store (Storage): Bot storage
-
             config (Config): Bot configuration parameters
-
             message_content (str): The body of the message
-
             room (nio.rooms.MatrixRoom): The room the event came from
-
             event (nio.events.room_events.RoomMessageText): The event defining
                 the message
 
