@@ -2,13 +2,11 @@
 
 import logging
 import os
-import glob
 import json
 import re
 import subprocess
-import yaml
 import traceback
-from chat_functions import send_text_to_room
+from chat_functions import send_text_to_room, send_image_to_room
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +32,6 @@ class Command(object):
         self.commandlower = self.command.lower().split()[0]
 
 
-    
     async def process(self):  # noqa
         """Process the command."""
 
@@ -55,7 +52,7 @@ class Command(object):
                   args=self.args,
                   markdown_convert=False,
                   formatted=True,
-                  code=True,
+                  code=False,
                 )
 
     async def _echo(self):
@@ -105,15 +102,13 @@ class Command(object):
         try:
             # create a combined argv list, e.g. ['date', '--utc']
             argv_list = [cmd] + args
-            logger.debug(
-                f'OS command "{argv_list[0]}" with ' f'args: "{argv_list[1:]}"'
-            )
+            logger.debug(f'Command "{argv_list[0]}" with ' f'args: "{argv_list[1:]}"')
             envirnoment = os.environ.copy()
             envirnoment["PATH"] = "{}:{}".format(self.scripts_dir, envirnoment["PATH"])
             envirnoment["K9_ROOM"] = self.room.display_name
             logger.debug(f'PATH: {envirnoment["PATH"]}')
             run = subprocess.Popen(
-                argv_list,  # list of argv
+                argv_list,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
@@ -123,20 +118,29 @@ class Command(object):
             output = output.strip()
             std_err = std_err.strip()
             if run.returncode != 0:
-                logger.debug(
-                    f"Bot command {cmd} exited with return "
-                    f"code {run.returncode} and "
-                    f'stderr as "{std_err}" and '
-                    f'stdout as "{output}"'
-                )
                 output = (
-                    f"*** Error: command {cmd} returned error "
-                    f"code {run.returncode}. ***\n{std_err}\n{output}"
+                    f"command {cmd} returned an error: {run.returncode}\n"
+                    f"STDERR:\n{std_err}\nSTDOUT:\n{output}"
                 )
+                logger.debug(output)
             response = output
         except Exception:
-            response = SERVER_ERROR_MSG + traceback.format_exc()
-            code = True  # format stack traces as code
+            stacktrace = SERVER_ERROR_MSG + traceback.format_exc()
+            logger.debug(stacktrace)
+            if logger.level != 10:
+              return
+            response = stacktrace
+            code = True
+        
+        is_image = cmd.startswith('image_')
+        if is_image:
+            await send_image_to_room(
+              self.client,
+              self.room.room_id,
+              response
+            )
+            return
+
         logger.debug(f"Sending this reply back: {response}")
         await send_text_to_room(
             self.client,
