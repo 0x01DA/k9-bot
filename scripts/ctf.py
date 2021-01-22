@@ -26,7 +26,7 @@ async def ctf(req_type: str, teamid: str) -> str:
       data = await resp.json()
   if req_type == "teams":
     rating = data['rating'][0]["2021"]
-    output = "Rating Points: {}\tRating Place: {}\n".format(rating["rating_points"], rating["rating_place"])
+    output = "{}\nRating Points: {}\tRating Place: {}\n".format(data["name"], rating["rating_points"], rating["rating_place"])
   elif req_type == "events":
     for event in data:
       output += event["title"] + "\n\n"
