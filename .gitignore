@@ -1,10 +1,9 @@
 # PyCharm
 .idea/
 
-# Python virtualenv environment folders
-env/
-env3/
+.envrc
 .env/
+.venv/
 
 # Bot local files
 *.db
@@ -16,6 +15,7 @@ __pycache__/
 config.yaml
 docker-compose.yml
 scripts/config.rc
+credentials.json
 
 # e2ee store
 store/

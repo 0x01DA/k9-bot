@@ -10,3 +10,5 @@ peewee
 feedparser
 giphypop
 requests
+python-dotenv
+click

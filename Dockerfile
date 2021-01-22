@@ -12,16 +12,16 @@ RUN git clone https://gitlab.matrix.org/matrix-org/olm.git /tmp/libolm \
 
 WORKDIR /bot
 
-COPY *.py /bot/
-COPY requirements.txt dpkg_requirements.txt /bot/
-COPY aliases.yaml /bot/
+COPY requirements.txt dpkg_requirements.txt aliases.yaml /bot/
 
 RUN pip install -r requirements.txt
-
 RUN apt-get install -y $(head -n1 dpkg_requirements.txt)
 
 RUN apt-get purge -y build-essential && \
     apt-get autoremove -y && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+COPY scripts /bot/scripts/
+COPY *.py /bot/
 
 CMD [ "python", "./main.py" ]

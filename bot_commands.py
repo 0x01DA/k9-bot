@@ -1,27 +1,12 @@
 #!/usr/bin/env python3
 
-r"""bot_commands.py.
-
-See the implemented sample bot commands of `echo`, `date`, `dir`, `help`,
-and `whoami`? Have a close look at them and style your commands after these
-example commands.
-
-Don't change tabbing, spacing, or formating as the
-file is automatically linted and beautified.
-
-"""
-
-import getpass
 import logging
 import os
-import glob
 import json
-import re  # regular expression matching
+import re
 import subprocess
-import yaml
-from sys import platform
 import traceback
-from chat_functions import send_text_to_room
+from chat_functions import send_text_to_room, send_image_to_room
 
 logger = logging.getLogger(__name__)
 
@@ -33,17 +18,6 @@ class Command(object):
 
     def __init__(self, client, store, config, command, room, event):
         """Set up bot commands.
-
-        Arguments:
-        ---------
-            client (nio.AsyncClient): The client to communicate with Matrix
-            store (Storage): Bot storage
-            config (Config): Bot configuration parameters
-            command (str): The command and arguments
-            room (nio.rooms.MatrixRoom): The room the command was sent in
-            event (nio.events.room_events.RoomMessageText): The event
-                describing the command
-
         """
         self.client = client
         self.store = store
@@ -53,39 +27,23 @@ class Command(object):
         self.event = event
         # self.args: list : list of arguments
         self.args = re.findall(r'(?:[^\s,"]|"(?:\\.|[^"])*")+', self.command)[1:]
-        self.aliases = self.getaliases()
-        self.commandlower = self.command.lower()
+        self.aliases = self.config.aliases
+        self.scripts_dir = self.config.scripts_path_abs
+        self.commandlower = self.command.lower().split()[0]
 
-    def getaliases(self):
-        with open("aliases.yaml", 'r') as aliasfile:
-            aliases = yaml.safe_load(aliasfile)
-        for path in glob.glob("scripts/*"):
-            if os.access(path, os.X_OK):
-                script = os.path.split(path)[1]
-                script_name, _ = os.path.splitext(script)
-                if script in aliases:
-                    aliases[script].append(script_name)
-                else:
-                    aliases[script] = [ script_name ]
-        return aliases
 
-    
     async def process(self):  # noqa
         """Process the command."""
 
-        logger.debug(
-            f"bot_commands :: Command.process: {self.command} {self.room}"
-        )
+        logger.info(f"bot_commands :: Command.process: {self.command} {self.room.display_name} via {self.event}")
         # echo
         if re.match("^echo$|^echo .*", self.commandlower):
             await self._echo()
         # help
-        elif re.match(
-            "^help$|^ayuda$|^man$|^manual$|^hilfe$|"
-            "^help .*|^help.sh$",
-            self.commandlower,
-        ):
+        elif re.match("^help$|^man$|^hilfe$|^help.sh$", self.commandlower):
             await self._show_help()
+        elif re.match("^list$|^commands$|^ls$", self.commandlower):
+            await self._list_commands()
         else:
             for command, alias in self.aliases.items():
               if self.commandlower in alias:
@@ -94,7 +52,7 @@ class Command(object):
                   args=self.args,
                   markdown_convert=False,
                   formatted=True,
-                  code=True,
+                  code=False,
                 )
 
     async def _echo(self):
@@ -106,35 +64,25 @@ class Command(object):
 
     async def _show_help(self):
         """Show the help text."""
-        if not self.args:
-            response = ("Ahoi, I'm K9!\nUse `commands` to view available commands.")
-            await send_text_to_room(self.client, self.room.room_id, response)
-            return
-
-        topic = self.args[0]
-        if topic == "rules":
-            response = "These are the rules: Act responsibly."
-        elif topic == "commands":
-            aliases = json.dumps(self.aliases)
-            response = (aliases)
-            await send_text_to_room(self.client, self.room.room_id, response)
-            return
-        else:
-            response = f"Unknown help topic `{topic}`!"
+        response = ("Ahoi, I'm K9!\nUse `commands` to view available commands.")
         await send_text_to_room(self.client, self.room.room_id, response)
+        return
+    
+    async def _list_commands(self):
+        """List Commands.."""
+        aliases = json.dumps(self.aliases, sort_keys=True, indent=4)
+        response = (aliases)
+        await send_text_to_room(self.client, self.room.room_id, response, code=True)
+        return
 
     async def _unknown_command(self):
         await send_text_to_room(
             self.client,
             self.room.room_id,
-            (
-                f"Unknown command `{self.command}`. "
-                "Try the `help` command for more information."
-            ),
+            (f"Unknown command `{self.command}`. Try `commands` command for a list."),
         )
 
-    async def _os_cmd(
-        self,
+    async def _os_cmd(self,
         cmd: str,
         args: list,
         markdown_convert=True,
@@ -144,18 +92,7 @@ class Command(object):
     ):
         """Pass generic command on to the operating system.
 
-        cmd (str): string of the command including any path,
-            make sure command is found
-            by operating system in its PATH for executables
-            e.g. "date" for OS date command.
-            cmd does not include any arguments.
-            Valid example of cmd: "date"
-            Invalid example for cmd: "echo 'Date'; date --utc"
-            Invalid example for cmd: "echo 'Date' && date --utc"
-            Invalid example for cmd: "TZ='America/Los_Angeles' date"
-            If you have commands that consist of more than 1 command,
-            put them into a shell or .bat script and call that script
-            with any necessary arguments.
+        cmd (str): string of the command including any path
         args (list): list of arguments
             Valid example: [ '--verbose', '--abc', '-d="hello world"']
         markdown_convert (bool): value for how to format response
@@ -165,33 +102,44 @@ class Command(object):
         try:
             # create a combined argv list, e.g. ['date', '--utc']
             argv_list = [cmd] + args
-            logger.debug(
-                f'OS command "{argv_list[0]}" with ' f'args: "{argv_list[1:]}"'
-            )
+            logger.debug(f'Command "{argv_list[0]}" with ' f'args: "{argv_list[1:]}"')
+            envirnoment = os.environ.copy()
+            envirnoment["PATH"] = "{}:{}".format(self.scripts_dir, envirnoment["PATH"])
+            envirnoment["K9_ROOM"] = self.room.display_name
+            logger.debug(f'PATH: {envirnoment["PATH"]}')
             run = subprocess.Popen(
-                argv_list,  # list of argv
+                argv_list,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
+                env=envirnoment,
             )
             output, std_err = run.communicate()
             output = output.strip()
             std_err = std_err.strip()
             if run.returncode != 0:
-                logger.debug(
-                    f"Bot command {cmd} exited with return "
-                    f"code {run.returncode} and "
-                    f'stderr as "{std_err}" and '
-                    f'stdout as "{output}"'
-                )
                 output = (
-                    f"*** Error: command {cmd} returned error "
-                    f"code {run.returncode}. ***\n{std_err}\n{output}"
+                    f"command {cmd} returned an error: {run.returncode}\n"
+                    f"STDERR:\n{std_err}\nSTDOUT:\n{output}"
                 )
+                logger.debug(output)
             response = output
         except Exception:
-            response = SERVER_ERROR_MSG + traceback.format_exc()
-            code = True  # format stack traces as code
+            stacktrace = SERVER_ERROR_MSG + traceback.format_exc()
+            logger.debug(stacktrace)
+            if logger.level != 10:
+              return
+            response = stacktrace
+            code = True
+        
+        if cmd.startswith('image_'):
+            await send_image_to_room(
+              self.client,
+              self.room.room_id,
+              response
+            )
+            return
+
         logger.debug(f"Sending this reply back: {response}")
         await send_text_to_room(
             self.client,
@@ -203,5 +151,3 @@ class Command(object):
             split=split,
         )
 
-
-# EOF

@@ -10,6 +10,8 @@ services:
       - ${PWD}/config.yaml:/bot/config.yaml
       - ${PWD}/bot.db:/bot/bot.db
       - ${PWD}/store/:/bot/store/
+      - ${PWD}/scripts/:/bot/scripts/
+      - ${PWD}/bot_commands.py:/bot/bot_commands.py
     environment:
       - "PATH=$PATH:/bot/scripts"
 

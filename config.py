@@ -5,10 +5,6 @@ r"""config.py.
 This file implements utility functions for
 - reading in the YAML config file
 - performing the according initialization and set-up
-
-Don't change tabbing, spacing, or formating as the
-file is automatically linted and beautified.
-
 """
 
 import logging
@@ -16,6 +12,7 @@ import re
 import os
 import yaml
 import sys
+import glob
 from typing import List, Any
 from errors import ConfigError
 
@@ -25,13 +22,8 @@ logger = logging.getLogger()
 class Config(object):
     """Handle config file."""
 
-    def __init__(self, filepath):
+    def __init__(self, filepath: str):
         """Initialize.
-
-        Arguments:
-        ---------
-            filepath (str): Path to config file
-
         """
         if not os.path.isfile(filepath):
             raise ConfigError(f"Config file '{filepath}' does not exist")
@@ -94,11 +86,16 @@ class Config(object):
         self.homeserver_url = self._get_cfg(
             ["matrix", "homeserver_url"], required=True)
 
-        self.command_prefix = self._get_cfg(["command_prefix"], default="!c")
+        self.command_prefix = self._get_cfg(["command_prefix"], default="!")
+        self.scripts_dir = self._get_cfg(["script_dir"], default="scripts")
+        self.aliases_yaml = self._get_cfg(["aliases_yaml"], default="aliases.yaml")
+        self.aliases = self.getaliases(self.aliases_yaml, self.scripts_dir)
+
+        self.scripts_path_abs = os.path.abspath(self.scripts_dir)
+
 
         if not self.user_password and not self.access_token:
-            raise ConfigError(
-                "Either user_password or access_token must be specified")
+            raise ConfigError("Either user_password or access_token must be specified")
 
         self.trust_own_devices = self._get_cfg(
             ["matrix", "trust_own_devices"], default=False, required=False)
@@ -140,3 +137,16 @@ class Config(object):
 
         # We found the option. Return it
         return config
+
+    def getaliases(self, aliases_path: str, scripts_dir: str):
+        with open(aliases_path, 'r') as aliasfile:
+            aliases = yaml.safe_load(aliasfile)
+        for path in glob.glob(scripts_dir+"/*"):
+            if os.access(path, os.X_OK):
+                script = os.path.split(path)[1]
+                script_name, _ = os.path.splitext(script)
+                if script in aliases:
+                    aliases[script].append(script_name)
+                else:
+                    aliases[script] = [ script_name ]
+        return aliases
