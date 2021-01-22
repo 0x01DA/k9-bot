@@ -132,8 +132,7 @@ class Command(object):
             response = stacktrace
             code = True
         
-        is_image = cmd.startswith('image_')
-        if is_image:
+        if cmd.startswith('image_'):
             await send_image_to_room(
               self.client,
               self.room.room_id,
