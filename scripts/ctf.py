@@ -7,10 +7,28 @@ import click
 from aiohttp import ClientSession
 import logging
 import asyncio
+from bs4 import BeautifulSoup
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+
+async def team_info(teamid: str) -> str:
+  uri = "https://ctftime.org/team/{}/".format(teamid)
+  async with ClientSession() as session:
+    async with session.get(uri) as resp:
+      data = await resp.text()
+
+  soup = BeautifulSoup(data, 'html.parser')
+  container = soup.find_all("div", {"class": "container"})[1]
+  rating = container.find("div", {"id": "rating_2021"})
+  country = rating.find_all("p")
+  country_rank = country[1].b.a.get_text()
+  # logger.debug(country[1].b.a.get_text())
+  upcoming_text = container.table.get_text().split("\n",2)
+
+  return "\nUpcoming:\n{}\n🇦🇹: {}\n".format(upcoming_text[2], country_rank)
 
 
 async def ctf(req_type: str, teamid: str) -> str:
@@ -26,12 +44,15 @@ async def ctf(req_type: str, teamid: str) -> str:
       data = await resp.json()
   if req_type == "teams":
     rating = data['rating'][0]["2021"]
+    upcoming_events = await team_info(teamid)
     output = "{}\nRating Points: {}\tRating Place: {}\n".format(data["name"], rating["rating_points"], rating["rating_place"])
+    output += upcoming_events
   elif req_type == "events":
     for event in data:
       output += event["title"] + "\n\n"
 
   return output
+
 
 @click.command()
 @click.argument('type', default="teams", type=click.Choice(['teams', 'events', 'results', 'top', 'help']))

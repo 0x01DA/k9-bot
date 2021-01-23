@@ -6,7 +6,7 @@ RUN apt-get update && apt-get upgrade -y && \
         build-essential \
         git
 
-RUN git clone https://gitlab.matrix.org/matrix-org/olm.git /tmp/libolm \
+RUN git clone --depth 1 https://gitlab.matrix.org/matrix-org/olm.git /tmp/libolm \
     && cd /tmp/libolm \
     && make install
 

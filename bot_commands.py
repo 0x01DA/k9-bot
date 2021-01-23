@@ -106,7 +106,6 @@ class Command(object):
             envirnoment = os.environ.copy()
             envirnoment["PATH"] = "{}:{}".format(self.scripts_dir, envirnoment["PATH"])
             envirnoment["K9_ROOM"] = self.room.display_name
-            logger.debug(f'PATH: {envirnoment["PATH"]}')
             run = subprocess.Popen(
                 argv_list,
                 stdout=subprocess.PIPE,

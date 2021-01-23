@@ -12,3 +12,4 @@ giphypop
 requests
 python-dotenv
 click
+beautifulsoup4
