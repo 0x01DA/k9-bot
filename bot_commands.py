@@ -17,8 +17,7 @@ class Command(object):
     """Use this class for your bot commands."""
 
     def __init__(self, client, store, config, command, room, event):
-        """Set up bot commands.
-        """
+        """Set up bot commands."""
         self.client = client
         self.store = store
         self.config = config
@@ -42,6 +41,8 @@ class Command(object):
         # help
         elif re.match("^help$|^man$|^hilfe$|^help.sh$", self.commandlower):
             await self._show_help()
+        elif re.match("^info$|^source$", self.commandlower):
+            await self._show_info()
         elif re.match("^list$|^commands$|^ls$", self.commandlower):
             await self._list_commands()
         else:
@@ -67,7 +68,13 @@ class Command(object):
         response = ("Ahoi, I'm K9!\nUse `commands` to view available commands.")
         await send_text_to_room(self.client, self.room.room_id, response)
         return
-    
+
+    async def _show_info(self):
+        """Show info."""
+        response = ("Find my source and additional info under: https://github.com/0x01DA/k9-bot")
+        await send_text_to_room(self.client, self.room.room_id, response)
+        return
+
     async def _list_commands(self):
         """List Commands.."""
         aliases = json.dumps(self.aliases, sort_keys=True, indent=4)
