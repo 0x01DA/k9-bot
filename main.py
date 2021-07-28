@@ -142,7 +142,7 @@ async def main():  # noqa
 
             
 
-            await client.sync_forever(timeout=30000, full_state=True)
+            await client.sync_forever(timeout=30000, loop_sleep_time=1337, full_state=True)
 
         except (ClientConnectionError, ServerDisconnectedError):
             logger.warning(
