@@ -48,6 +48,8 @@ matrix:
   # If true, device_name of bot will be changed to value given in device_name.
   change_device_name: false
   # encrytion is enabled by default
+  # modify the sleep-time of the loop:
+  # loop_sleep_time = 1337
 
 storage:
   # The path to the database

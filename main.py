@@ -50,6 +50,11 @@ async def main():  # noqa
         config_filepath = "config.yaml"
     config = Config(config_filepath)
 
+    loop_sleep_time = 1337
+
+    if config.loop_sleep_time:
+        loop_sleep_time = int(config.loop_sleep_time)
+
     # Configure the database
     store = Storage(config.database_filepath)
 
@@ -69,6 +74,7 @@ async def main():  # noqa
         store_path=config.store_filepath,
         config=client_config,
     )
+
 
     # Set up event callbacks
     callbacks = Callbacks(client, store, config)
@@ -142,7 +148,7 @@ async def main():  # noqa
 
             
 
-            await client.sync_forever(timeout=30000, loop_sleep_time=1337, full_state=True)
+            await client.sync_forever(timeout=30000, loop_sleep_time=loop_sleep_time, full_state=True)
 
         except (ClientConnectionError, ServerDisconnectedError):
             logger.warning(
