@@ -85,6 +85,8 @@ class Config(object):
             ["matrix", "device_name"], default="nio-template")
         self.homeserver_url = self._get_cfg(
             ["matrix", "homeserver_url"], required=True)
+        self.loop_sleep_time = self._get_cfg(
+            ["matrix", "loop_sleep_time"], default=1337)
 
         self.command_prefix = self._get_cfg(["command_prefix"], default="!")
         self.scripts_dir = self._get_cfg(["script_dir"], default="scripts")
