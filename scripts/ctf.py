@@ -10,10 +10,6 @@ import asyncio
 from bs4 import BeautifulSoup
 
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-
-
 async def team_info(teamid: str) -> str:
   uri = "https://ctftime.org/team/{}/".format(teamid)
   async with ClientSession() as session:
@@ -25,7 +21,7 @@ async def team_info(teamid: str) -> str:
   rating = container.find("div", {"id": "rating_2021"})
   country = rating.find_all("p")
   country_rank = country[1].b.a.get_text()
-  # logger.debug(country[1].b.a.get_text())
+  logging.debug(country[1].b.a.get_text())
   upcoming_text = container.table.get_text().split("\n",2)
 
   return "\nUpcoming:\n{}\n🇦🇹: {}\n".format(upcoming_text[2], country_rank)
@@ -37,13 +33,14 @@ async def ctf(req_type: str, teamid: str) -> str:
 
   if req_type == "teams":
     uri = uri + teamid + "/"
-  if req_type == "events":
+  elif req_type == "events":
     uri = uri + "?limit=5"
   async with ClientSession() as session:
     async with session.get(uri) as resp:
       data = await resp.json()
+      logging.debug(data)
   if req_type == "teams":
-    rating = data['rating'][0]["2021"]
+    rating = data['rating']["2021"]
     upcoming_events = await team_info(teamid)
     output = "{}\nRating Points: {}\tRating Place: {}\n".format(data["name"], rating["rating_points"], rating["rating_place"])
     output += upcoming_events
@@ -56,15 +53,21 @@ async def ctf(req_type: str, teamid: str) -> str:
 
 @click.command()
 @click.argument('type', default="teams", type=click.Choice(['teams', 'events', 'results', 'top', 'help']))
-def main(type):
+@click.option('--verbose', '-v', is_flag=True, help="Print more output.")
+def main(type, verbose):
   if type == 'help':
     ctx = click.get_current_context()
     click.echo(ctx.get_help())
     return
+  
+  if verbose:
+    logging.basicConfig(level=logging.DEBUG)
+
+  logging.debug("Debug Logging Activated: 👾")
   config = "{}/config.rc".format(os.path.abspath(os.path.dirname(sys.argv[0])))
   load_dotenv(dotenv_path=config)
   teamid = os.getenv("CTF_TEAMID", default="translate")
-  loop = asyncio.get_event_loop()
+  loop = asyncio.get_event_loop_policy().get_event_loop()
   output = loop.run_until_complete(ctf(type, teamid))
   print(output)
 
