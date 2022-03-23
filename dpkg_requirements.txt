@@ -1,1 +1,1 @@
-rsstail w3m ansiweather 
+rsstail w3m ansiweather vim sed

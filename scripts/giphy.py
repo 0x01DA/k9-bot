@@ -35,10 +35,12 @@ async def giphy(search_term: str, endpoint: str, api_key: str, cache_dir: str, i
   # return gif_link
   return image_path
 
+
 @click.command()
 @click.argument('search')
-@click.option('--image', is_flag=True, default=os.path.basename(sys.argv[0]).startswith('image_'))
+@click.option('--image', is_flag=True, default=True)
 def main(search, image):
+  image = False if os.path.basename(sys.argv[0]).startswith('giphy') else image
   config = "{}/config.rc".format(os.path.abspath(os.path.dirname(sys.argv[0])))
   load_dotenv(dotenv_path=config)
   logger.info(image)

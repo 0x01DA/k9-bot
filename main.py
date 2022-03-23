@@ -16,7 +16,6 @@ file is automatically linted and beautified.
 import asyncio
 import logging
 import sys
-import traceback
 from time import sleep
 from nio import (
     AsyncClient,
@@ -37,7 +36,9 @@ from config import Config
 from storage import Storage
 
 logger = logging.getLogger(__name__)
-
+handler = logging.StreamHandler(sys.stdout)
+logger.addHandler(handler)
+logger.setLevel(logging.DEBUG)
 
 async def main():  # noqa
     """Create bot as Matrix client and enter event loop."""
@@ -161,9 +162,9 @@ async def main():  # noqa
             await client.close()
 
 try:
-    asyncio.get_event_loop().run_until_complete(main())
+    asyncio.run(main())
 except Exception:
-    logger.debug(traceback.format_exc())
+    logger.exception("Error")
     sys.exit(1)
 except KeyboardInterrupt:
     logger.debug("Received keyboard interrupt.")

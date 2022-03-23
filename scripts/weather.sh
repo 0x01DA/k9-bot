@@ -24,14 +24,11 @@ function getweather() {
         # give a short, terse listing of forecast
         curl "wttr.in/${1%,*}?m&format=%l:+%C+%t+(%f)+%o+%p" # remove everything to the right of comma
     else
-        # give a mediaum, default listing of forecast
-        if [ "${1,,}" == "san+juan,puerto+rico" ]; then set -- "4568138"; fi # bug, reset $1
-        # see https://openweathermap.org/city/4568138
-        ansiweather -l "$1" | tr "-" "\n" | tr "=>" "\n" | sed "s/^ //g" | sed '/^[[:space:]]*$/d' 2>&1
+        ansiweather -l "$1" | tr "-" "\n" | tr "=>" "\n" | /bin/sed "s/^ //g" | /bin/sed '/^[[:space:]]*$/d' 2>&1
     fi
 }
 
-if [ "$#" == "0" ]; then
+if [ "$1" == "help" ]; then
     echo "Example weather locations are: paris london san-diego new-york"
     echo "Try \"weather wien\" for example to get the Vienna weather forecast."
     echo "Try \"weather France\" for example to get the French weather forecast."
@@ -39,7 +36,7 @@ if [ "$#" == "0" ]; then
     exit 0
 fi
 
-arg1=$1 # tweather-location, city, required
+arg1=${1:-wien} # tweather-location, city, required
 arg2=$2 # "full" (optional) or "short" (optional) 
 
 function doweather() {

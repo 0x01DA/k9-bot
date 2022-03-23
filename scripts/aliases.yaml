@@ -1,2 +1,3 @@
 ---
 hn.sh: ["hn", "hackernews"]
+image_giphy.py: ["ig"]
